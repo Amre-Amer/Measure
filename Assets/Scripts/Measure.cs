@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
@@ -26,9 +26,10 @@ public class Measure : MonoBehaviour
     public GameObject goTapeMeasure;
     public GameObject goTape;
     int cntFrames;
-    float dist;
+    float distMeters;
+    int distInches;
+    int distInchesLast;
     AudioSource audioSource;
-    float distLast;
     public AudioClip clipTape;
     public AudioClip clipOk;
     SequenceType sequenceLast;
@@ -53,7 +54,8 @@ public class Measure : MonoBehaviour
     {
         UpdateYnTap();
         UpdateMeasure();
-        dist = GetDist();
+        distMeters = GetDist();
+        distInches = MetersToInches(distMeters);
         if (sequenceLast != sequence || DidChangeDist())
         {
             FormatDist();
@@ -66,7 +68,7 @@ public class Measure : MonoBehaviour
         //
         sequenceLast = sequence;
         touchCountLast = touchCount;
-        distLast = dist;
+        distInchesLast = distInches;
         cntFrames++;
     }
 
@@ -158,7 +160,7 @@ public class Measure : MonoBehaviour
 
     bool DidChangeDist()
     {
-        if (MetersToInches(distLast) != MetersToInches(dist))
+        if (distInchesLast != distInches)
         {
             return true;
         }
@@ -249,16 +251,16 @@ public class Measure : MonoBehaviour
     void FormatDist()
     {
         string txt = "";
-        float inches = dist * feetPerMeter * 12;
-        if (inches > 12)
+        int inches = distInches;
+        if (distInches >= 12)
         {
-            int feet = (int)(inches / 12);
+            int feet = inches / 12;
             inches -= feet * 12;
-            txt +=  feet.ToString("F0") + "'-" + inches.ToString("F0") + "\"";
+            txt +=  feet + "'-" + inches + "\"";
         }
         else
         {
-            txt += inches.ToString("F0") + "\"";
+            txt += inches + "\"";
         }
         distFormatted = txt;
     }
