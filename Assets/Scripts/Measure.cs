@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
@@ -61,6 +61,7 @@ public class Measure : MonoBehaviour
     private void Update()
     {
         UpdateMeasure();
+<<<<<<< HEAD
         if (!ynFirstPlaneFound)
         {
             UpdateProgress();
@@ -68,6 +69,10 @@ public class Measure : MonoBehaviour
         }
         CheckTap();
         UpdateDistance();
+=======
+        distMeters = GetDist();
+        distInches = MetersToInches(distMeters);
+>>>>>>> 55bbe6c019f93a3ff248b93d8a7b25f5ed903b22
         if (sequenceLast != sequence || DidChangeDist())
         {
             FormatDist();
