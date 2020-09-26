@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
@@ -40,7 +40,11 @@ public class Measure : MonoBehaviour
     public Image imageProgress;
     bool ynFirstPlaneFound;
     public Image imageThumb;
-    public Image imageCenter;
+    public Image imageCenterH;
+    public Image imageCenterV;
+    bool ynPlaneFound;
+    bool ynPlaneFoundLast;
+    bool ynFirstTap;
 
     private void Awake()
     {
@@ -54,6 +58,7 @@ public class Measure : MonoBehaviour
         goFirst = Instantiate(goFirstPrefab);
         goSecond = Instantiate(goSecondPrefab);
         ShowHideHelpers(false);
+        ShowHideFirstTap(false);
         imageThumb.gameObject.SetActive(false);
         ShowInfo();
     }
@@ -61,7 +66,6 @@ public class Measure : MonoBehaviour
     private void Update()
     {
         UpdateMeasure();
-<<<<<<< HEAD
         if (!ynFirstPlaneFound)
         {
             UpdateProgress();
@@ -69,10 +73,6 @@ public class Measure : MonoBehaviour
         }
         CheckTap();
         UpdateDistance();
-=======
-        distMeters = GetDist();
-        distInches = MetersToInches(distMeters);
->>>>>>> 55bbe6c019f93a3ff248b93d8a7b25f5ed903b22
         if (sequenceLast != sequence || DidChangeDist())
         {
             FormatDist();
@@ -86,6 +86,7 @@ public class Measure : MonoBehaviour
         sequenceLast = sequence;
         touchCountLast = touchCount;
         distInchesLast = distInches;
+        ynPlaneFoundLast = ynPlaneFound;
         cntFrames++;
     }
 
@@ -97,11 +98,9 @@ public class Measure : MonoBehaviour
 
     void ShowHideHelpers(bool yn)
     {
-        goFirst.SetActive(yn);
-        goSecond.SetActive(yn);
         goTape.SetActive(yn);
-        goPoi.SetActive(yn);
-        imageCenter.gameObject.SetActive(yn);
+        imageCenterH.gameObject.SetActive(yn);
+        imageCenterV.gameObject.SetActive(yn);
     }
 
     void UpdateProgress()
@@ -121,6 +120,7 @@ public class Measure : MonoBehaviour
             } else
             {
                 ynTap = true;
+                CheckFirstTap();
                 imageThumb.gameObject.SetActive(true);
             }
         }
@@ -130,9 +130,39 @@ public class Measure : MonoBehaviour
         }
     }
 
+    void CheckFirstTap()
+    {
+        if (!ynFirstTap)
+        {
+            ShowHideFirstTap(true);
+            ynFirstTap = true;
+        }
+    }
+
+    void ShowHideFirstTap(bool yn)
+    {
+        goPoi.SetActive(yn);
+        goFirst.SetActive(yn);
+        goSecond.SetActive(yn);
+    }
+
     void UpdateMeasure()
     {
-        if (RayCastPlane())
+        RayCastPlane();
+        if (ynPlaneFoundLast != ynPlaneFound)
+        {
+            if (ynPlaneFound)
+            {
+                imageCenterH.color = Color.white;
+                imageCenterV.color = Color.white;
+            }
+            else
+            {
+                imageCenterH.color = Color.red;
+                imageCenterV.color = Color.red;
+            }
+        }
+        if (ynPlaneFound)
         {
             FirstPlaneFound();
             Pose hitPose = hits[0].pose;
@@ -147,14 +177,17 @@ public class Measure : MonoBehaviour
         }
     }
 
-    bool RayCastPlane()
+    void RayCastPlane()
     {
         scrCenter = new Vector2(Screen.width / 2, Screen.height / 2);
         if (aRRaycastManager.Raycast(scrCenter, hits, TrackableType.Planes))
         {
-            return true;
+            ynPlaneFound = true;
         }
-        return false;
+        else
+        {
+            ynPlaneFound = false;
+        }
     }
 
         void UpdateMeasureNoTap(Pose hitPose)
