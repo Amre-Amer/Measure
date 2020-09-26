@@ -23,37 +23,51 @@ public class Measure : MonoBehaviour
     int touchCountLast;
     SequenceType sequence;
     const float feetPerMeter = 3.28f;
-    public GameObject goTapeMeasure;
+    public GameObject goTapeMeasurePrefab;
+    GameObject goTapeMeasure;
     public GameObject goTape;
     int cntFrames;
-    float dist;
+    float distMeters;
+    int distInches;
+    int distInchesLast;
     AudioSource audioSource;
-    float distLast;
     public AudioClip clipTape;
     public AudioClip clipOk;
     SequenceType sequenceLast;
     public GameObject goPoi;
     string distFormatted;
     public Camera cam;
+    public Image imageProgress;
+    bool ynFirstPlaneFound;
+    public Image imageThumb;
+    public Image imageCenter;
 
     private void Awake()
     {
         aRRaycastManager = GetComponent<ARRaycastManager>();
         audioSource = GetComponent<AudioSource>();
-        sequence = SequenceType.first;
+        sequence = SequenceType.searching;
     }
 
     private void Start()
     {
         goFirst = Instantiate(goFirstPrefab);
         goSecond = Instantiate(goSecondPrefab);
+        ShowHideHelpers(false);
+        imageThumb.gameObject.SetActive(false);
+        ShowInfo();
     }
 
     private void Update()
     {
-        UpdateYnTap();
         UpdateMeasure();
-        dist = GetDist();
+        if (!ynFirstPlaneFound)
+        {
+            UpdateProgress();
+            return;
+        }
+        CheckTap();
+        UpdateDistance();
         if (sequenceLast != sequence || DidChangeDist())
         {
             FormatDist();
@@ -66,48 +80,114 @@ public class Measure : MonoBehaviour
         //
         sequenceLast = sequence;
         touchCountLast = touchCount;
-        distLast = dist;
+        distInchesLast = distInches;
         cntFrames++;
     }
 
-    void UpdateYnTap()
+    void UpdateDistance()
+    {
+        distMeters = GetDist();
+        distInches = MetersToInches(distMeters);
+    }
+
+    void ShowHideHelpers(bool yn)
+    {
+        goFirst.SetActive(yn);
+        goSecond.SetActive(yn);
+        goTape.SetActive(yn);
+        goPoi.SetActive(yn);
+        imageCenter.gameObject.SetActive(yn);
+    }
+
+    void UpdateProgress()
+    {
+        imageProgress.transform.Rotate(0, 0, -3);
+    }
+
+    void CheckTap()
     {
         ynTap = false;
         touchCount = Input.touchCount;
         if (touchCountLast != touchCount)
         {
-            if (touchCount > 0)
+            if (touchCount == 0)
+            {
+                imageThumb.gameObject.SetActive(false);
+            } else
             {
                 ynTap = true;
+                imageThumb.gameObject.SetActive(true);
             }
+        }
+        if (touchCount > 0)
+        {
+            imageThumb.GetComponent<RectTransform>().position = Input.touches[0].position;
         }
     }
 
     void UpdateMeasure()
     {
+        if (RayCastPlane())
+        {
+            FirstPlaneFound();
+            Pose hitPose = hits[0].pose;
+            if (ynTap)
+            {
+                UpdateMeasureTap(hitPose);
+            }
+            else
+            {
+                UpdateMeasureNoTap(hitPose);
+            }
+        }
+    }
+
+    bool RayCastPlane()
+    {
         scrCenter = new Vector2(Screen.width / 2, Screen.height / 2);
         if (aRRaycastManager.Raycast(scrCenter, hits, TrackableType.Planes))
         {
-            Pose hitPose = hits[0].pose;
-            switch (sequence)
-            {
-                case SequenceType.first:
-                    AddEditTapMeasure(hitPose);
-                    if (ynTap)
-                    {
-                        goFirst.transform.position = hitPose.position;
-                        sequence = SequenceType.second;
-                    }
-                    break;
-                case SequenceType.second:
-                    AddEditTapMeasure(hitPose);
-                    goSecond.transform.position = hitPose.position;
-                    if (ynTap)
-                    {
-                        sequence = SequenceType.first;
-                    }
-                    break;
-            }
+            return true;
+        }
+        return false;
+    }
+
+        void UpdateMeasureNoTap(Pose hitPose)
+    {
+        switch (sequence)
+        {
+            case SequenceType.first:
+                AddEditTapMeasure(hitPose);
+                break;
+            case SequenceType.second:
+                AddEditTapMeasure(hitPose);
+                goSecond.transform.position = hitPose.position;
+                break;
+        }
+    }
+
+    void UpdateMeasureTap(Pose hitPose)
+    {
+        switch (sequence)
+        {
+            case SequenceType.first:
+                goFirst.transform.position = hitPose.position;
+                sequence = SequenceType.second;
+                break;
+            case SequenceType.second:
+                sequence = SequenceType.first;
+                break;
+        }
+    }
+
+    void FirstPlaneFound()
+    {
+        if (!ynFirstPlaneFound)
+        {
+            imageProgress.gameObject.SetActive(false);
+            ynFirstPlaneFound = true;
+            sequence = SequenceType.first;
+            ShowHideHelpers(true);
         }
     }
 
@@ -139,7 +219,7 @@ public class Measure : MonoBehaviour
         goTape.transform.position = GetPosMid();
         goTape.transform.LookAt(goFirst.transform.position);
         Vector3 sca = goTape.transform.localScale;
-        sca.z = GetDist();
+        sca.z = distMeters;
         goTape.transform.localScale = sca;
         goTape.transform.Rotate(0, 180, 90);
     }
@@ -158,7 +238,7 @@ public class Measure : MonoBehaviour
 
     bool DidChangeDist()
     {
-        if (MetersToInches(distLast) != MetersToInches(dist))
+        if (distInchesLast != distInches)
         {
             return true;
         }
@@ -216,13 +296,18 @@ public class Measure : MonoBehaviour
     {
         if (!goTapeMeasure)
         {
-            goTapeMeasure = Instantiate(goSecondPrefab, hitPose.position, hitPose.rotation);
+            goTapeMeasure = Instantiate(goTapeMeasurePrefab, hitPose.position, hitPose.rotation);
         }
         else
         {
-            goTapeMeasure.transform.position = hitPose.position;
-            goTapeMeasure.transform.rotation = hitPose.rotation;
+            MatchPose(goTapeMeasure, hitPose);
         }
+    }
+
+    void MatchPose(GameObject go, Pose hitPose)
+    {
+        go.transform.position = hitPose.position;
+        go.transform.rotation = hitPose.rotation;
     }
 
     void ShowInfo()
@@ -236,11 +321,14 @@ public class Measure : MonoBehaviour
         string txt = "?";
         switch(sequence)
         {
+            case SequenceType.searching:
+                txt = "Searching...";
+                break;
             case SequenceType.first:
-                txt = "Pick the first point:";
+                txt = "Tap first point:";
                 break;
             case SequenceType.second:
-                txt = "Pick the second point:";
+                txt = "Tap second point:";
                 break;
         }
         return txt;
@@ -249,16 +337,16 @@ public class Measure : MonoBehaviour
     void FormatDist()
     {
         string txt = "";
-        float inches = dist * feetPerMeter * 12;
-        if (inches > 12)
+        int inches = distInches;
+        if (distInches >= 12)
         {
-            int feet = (int)(inches / 12);
+            int feet = inches / 12;
             inches -= feet * 12;
-            txt +=  feet.ToString("F0") + "'-" + inches.ToString("F0") + "\"";
+            txt +=  feet + "'-" + inches + "\"";
         }
         else
         {
-            txt += inches.ToString("F0") + "\"";
+            txt += inches + "\"";
         }
         distFormatted = txt;
     }
@@ -266,6 +354,7 @@ public class Measure : MonoBehaviour
 
 public enum SequenceType
 {
+    searching,
     first,
     second
 }
