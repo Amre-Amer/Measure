@@ -25,7 +25,8 @@ public class Measure : MonoBehaviour
     const float feetPerMeter = 3.28f;
     public GameObject goTapeMeasurePrefab;
     GameObject goTapeMeasure;
-    public GameObject goTape;
+    GameObject goTape;
+    public GameObject goTapePrefab;
     int cntFrames;
     float distMeters;
     int distInches;
@@ -34,7 +35,8 @@ public class Measure : MonoBehaviour
     public AudioClip clipTape;
     public AudioClip clipOk;
     SequenceType sequenceLast;
-    public GameObject goPoi;
+    GameObject goPoi;
+    public GameObject goPoiPrefab;
     string distFormatted;
     public Camera cam;
     public Image imageProgress;
@@ -57,6 +59,8 @@ public class Measure : MonoBehaviour
     {
         goFirst = Instantiate(goFirstPrefab);
         goSecond = Instantiate(goSecondPrefab);
+        goTape = Instantiate(goTapePrefab);
+        goPoi = Instantiate(goPoiPrefab);
         ShowHideHelpers(false);
         ShowHideFirstTap(false);
         imageThumb.gameObject.SetActive(false);
@@ -190,7 +194,7 @@ public class Measure : MonoBehaviour
         }
     }
 
-        void UpdateMeasureNoTap(Pose hitPose)
+    void UpdateMeasureNoTap(Pose hitPose)
     {
         switch (sequence)
         {

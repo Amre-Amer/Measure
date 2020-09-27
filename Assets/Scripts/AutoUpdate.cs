@@ -6,9 +6,11 @@ using UnityEngine.UI;
 public class AutoUpdate : MonoBehaviour
 {
     const string urlServer = "https://0726482bbe2430902.temporary.link/Measure/AutoUpdate.txt";
+//    const string urlAutoUpdate = "https://0726482bbe2430902.temporary.link/Measure/Measure.apk";
     const string urlAutoUpdate = "https://drive.google.com/file/d/17iyiKoizo54Bi1M8a40S-4Te2h_Jyue8/view?usp=sharing";
     public GameObject goAutoUpdate;
     public Text textAutoUpdate;
+    public Text textVersion;
 
     private void Awake()
     {
@@ -17,7 +19,7 @@ public class AutoUpdate : MonoBehaviour
 
     void Start()
     {
-        if (Application.platform == RuntimePlatform.Android)
+        if (Application.platform == RuntimePlatform.Android || Application.isEditor)
         {
             Invoke(nameof(CheckAutoUpdate), 1);
         }
@@ -62,10 +64,15 @@ public class AutoUpdate : MonoBehaviour
         else
         {
             string txt = www.downloadHandler.text;
-            if (txt.ToLower() != "no")
+            string[] stuff = txt.Split('\n');
+            if (stuff.Length > 1)
             {
-                ShowUpdateAvailable(txt);
-            }            
+                string txtVersion = stuff[0];
+                if (txtVersion.ToLower() != textVersion.text.ToLower())
+                {
+                    ShowUpdateAvailable(txt);
+                }
+            }
         }
     }
 
