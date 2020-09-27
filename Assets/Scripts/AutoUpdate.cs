@@ -8,6 +8,7 @@ public class AutoUpdate : MonoBehaviour
     const string urlServer = "https://0726482bbe2430902.temporary.link/Measure/AutoUpdate.txt";
 //    const string urlAutoUpdate = "https://0726482bbe2430902.temporary.link/Measure/Measure.apk";
     const string urlAutoUpdate = "https://drive.google.com/file/d/17iyiKoizo54Bi1M8a40S-4Te2h_Jyue8/view?usp=sharing";
+    const string urlHelp = "https://sites.google.com/amre-amer.com/resume/home/tape-measure";
     public GameObject goAutoUpdate;
     public Text textAutoUpdate;
     public Text textVersion;
@@ -23,6 +24,11 @@ public class AutoUpdate : MonoBehaviour
         {
             Invoke(nameof(CheckAutoUpdate), 1);
         }
+    }
+
+    public void OnClickHelp()
+    {
+        Application.OpenURL(urlHelp);
     }
 
     void CheckAutoUpdate()
